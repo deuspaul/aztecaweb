@@ -18,3 +18,6 @@ Se descartaron 0–0,5 s porque llevan la interfaz superpuesta.
 - **Móvil:** `object-fit: cover` con `object-position` (escena 1 al 38 %) recorta los lados en vertical. Es un recorte del navegador, no un encuadre equivalente.
 - El parallax es de ≤3 % del alto de la ventana dentro de un sobrante del 4 %. Con reduced-motion se desactiva y los fundidos pasan a cortes discretos.
 - El tinte por hora y el filtro de clima simulado son capas CSS; no alteran los archivos.
+
+## Verificación visual: PENDIENTE
+El QA en navegador falló con `ERR_CONNECTION_REFUSED` en 127.0.0.1:8090 y localhost. No se ha comprobado el recorte móvil, la legibilidad/contraste sobre las escenas, la intensidad de los tintes ni el rendimiento. No hay capturas del sitio en el repo.
