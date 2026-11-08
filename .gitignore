@@ -1,0 +1,19 @@
+# Medios fuente y capturas: no versionar
+*.mp4
+*.mov
+*.webm
+*.wav
+*.mp3
+*.m4a
+*.aac
+# Secretos / entorno
+.env
+.env.*
+*.pem
+*.key
+credentials*
+secrets*
+# Herramientas
+node_modules/
+.DS_Store
+*.log

@@ -1,0 +1,20 @@
+--- before/prototipo-6-dinamico.html
++++ after/prototipo-6-dinamico.html
+@@ -148,6 +148,17 @@
+ }
+ html.reduced-motion .rv{opacity:1;transform:none}
+ html.reduced-motion .hint{animation:none}
++nav a:not(.cta){
++  color:#fff;
++  background:rgba(8,18,30,.96);
++  box-shadow:0 0 0 5px rgba(8,18,30,.96),0 0 0 6px rgba(255,255,255,.4);
++}
++nav a:not(.cta):hover,nav a:not(.cta):focus-visible{
++  color:#fff;
++  background:#08121e;
++  box-shadow:0 0 0 5px #08121e,0 0 0 7px #fff;
++}
++nav a:not(.cta):focus-visible{outline:2px solid #fff}
+ </style>
+ </head>
+ <body>

@@ -1,0 +1,50 @@
+{
+ "fuente": {
+  "url": "https://grok.com/imagine/post/6e8917b5-48f8-49d3-a696-1824488cf697",
+  "sha256": "03d90d6f3403a2c748244ad3004b1197bd0c83f0b332d89edf5a9284a6ab2aca",
+  "video": "h264 704x432 24fps 361 frames 15.0417s",
+  "nota": "el MP4 original no se incluye en el repo"
+ },
+ "extraccion": "ffmpeg select n%12==0, t=n/24 exacto",
+ "escenas": [
+  {
+   "archivo": "assets/bg/escena1-paisaje-t01.50s.webp",
+   "escena": "paisaje / pirámide",
+   "t_s": 1.5,
+   "frame": 36,
+   "wh": [
+    704,
+    432
+   ],
+   "bytes": 87522,
+   "sha256": "2de8d066ea01ee78df061780c73a755e68d2b1a434656cd430795d8bc4c31763",
+   "operacion": "ninguna: fotograma decodificado → WebP q90 a resolución original; sin upscale, sin recorte, sin cosido"
+  },
+  {
+   "archivo": "assets/bg/escena2-portal-t08.50s.webp",
+   "escena": "cielo / portal (servicios, visión)",
+   "t_s": 8.5,
+   "frame": 204,
+   "wh": [
+    704,
+    432
+   ],
+   "bytes": 30412,
+   "sha256": "b98e497be57ddf2d73d7d2d6f0a0541fbe886b79d987840e1f1564823b1e6c8d",
+   "operacion": "ninguna: fotograma decodificado → WebP q90 a resolución original; sin upscale, sin recorte, sin cosido"
+  },
+  {
+   "archivo": "assets/bg/escena3-galaxias-t12.50s.webp",
+   "escena": "galaxias (contacto)",
+   "t_s": 12.5,
+   "frame": 300,
+   "wh": [
+    704,
+    432
+   ],
+   "bytes": 77708,
+   "sha256": "e6893bd997b38691e74ac9a71305d9b2ffe1a660669744d46c0e16b3ea83f20e",
+   "operacion": "ninguna: fotograma decodificado → WebP q90 a resolución original; sin upscale, sin recorte, sin cosido"
+  }
+ ]
+}

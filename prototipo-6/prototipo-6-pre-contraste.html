@@ -1,0 +1,1737 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AztecaWeb · Prototipo 6 · Tema dinámico (hora + clima)</title>
+<style>
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:auto}
+body{
+  font-family:'Trebuchet MS',Helvetica,sans-serif;
+  color:var(--card-text,#1d1b33);
+  overflow-x:hidden;
+  background:#05030f;
+}
+#bg{position:fixed;inset:0;width:100vw;height:100vh;z-index:0}
+.ph{outline:2px dashed #e00;color:#d00;background:rgba(255,255,255,.9);padding:0 4px;font-size:.8em;font-family:Arial,sans-serif;font-weight:normal}
+
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:20;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 4vw;
+  background:var(--nav-bg,rgba(255,255,255,.28));
+  backdrop-filter:blur(8px);
+  transition:background .5s,color .5s;
+}
+nav b{
+  font-size:22px;
+  color:var(--nav-text-live,var(--nav-text,#142033));
+  text-shadow:var(--nav-halo-live,var(--nav-halo,0 1px 8px rgba(255,255,255,.85)));
+  transition:color .5s,text-shadow .5s;
+}
+nav b i{color:var(--accent,#0b8f9e);font-style:normal}
+nav a{
+  margin-left:16px;
+  color:var(--nav-text-live,var(--nav-text,#142033));
+  text-decoration:none;font-size:14px;
+  text-shadow:var(--nav-halo-live,var(--nav-halo,0 1px 8px rgba(255,255,255,.85)));
+  transition:color .5s;
+}
+.btn,nav .cta{
+  display:inline-block;
+  background:var(--accent,#0b8f9e);
+  color:var(--accent-text,#fff);
+  padding:11px 20px;border-radius:30px;font-weight:bold;
+  text-decoration:none;text-shadow:none;
+  transition:transform .2s,background .5s,color .5s;
+}
+.btn:hover,nav .cta:hover{transform:translateY(-3px) scale(1.04)}
+
+main{position:relative;z-index:5}
+section{min-height:100vh;display:flex;align-items:center;padding:12vh 5vw;position:relative}
+.card{
+  background:var(--card-bg,rgba(255,255,255,.86));
+  color:var(--card-text,#142033);
+  border:var(--card-border,1px solid rgba(20,32,51,.08));
+  border-radius:22px;padding:26px;max-width:480px;
+  backdrop-filter:blur(8px);
+  box-shadow:0 20px 60px rgba(0,0,0,.2);
+  transition:transform .35s,box-shadow .35s,background .5s,color .5s,border .5s;
+}
+.card:hover{transform:translateY(-8px)}
+.rv{opacity:0;transform:translateY(40px);transition:opacity .8s,transform .8s}
+.rv.in{opacity:1;transform:none}
+h1{font-size:clamp(40px,6vw,80px);line-height:1}
+h2{font-size:clamp(26px,3.5vw,44px);margin-bottom:10px}
+p{line-height:1.5;margin:8px 0}
+.tag{letter-spacing:3px;font-size:12px;text-transform:uppercase;opacity:.85}
+#hero{height:100vh;align-items:center}
+.svcs{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;width:100%}
+.svcs .card{width:290px}
+.ico{font-size:34px}
+#galaxy,#vision{justify-content:center;text-align:center}
+#galaxy .card,#vision .card{
+  background:var(--upper-card-bg,rgba(15,10,35,.5));
+  color:var(--upper-card-text,#fff);
+  border:1px solid rgba(255,255,255,.25);
+}
+.meter{
+  position:fixed;right:18px;top:50%;transform:translateY(-50%);
+  z-index:20;width:4px;height:160px;background:rgba(255,255,255,.3);border-radius:4px;
+}
+.meter i{position:absolute;bottom:0;left:0;right:0;height:calc(var(--p)*100%);background:var(--accent,#ff7a3d);border-radius:4px}
+.hint{
+  position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
+  z-index:20;color:#fff;font-size:13px;
+  opacity:calc(1 - var(--p)*8);
+  animation:b 1.5s infinite;
+  text-shadow:0 1px 6px #000;
+  pointer-events:none;
+}
+@keyframes b{50%{bottom:24px}}
+
+/* Theme control pill — bottom-left, clear of nav / meter / hint */
+#az-theme-wrap{
+  position:fixed;left:14px;bottom:14px;z-index:40;
+  font-family:'Trebuchet MS',Helvetica,sans-serif;
+}
+#az-theme-pill{
+  appearance:none;border:1px solid rgba(255,255,255,.28);
+  background:rgba(8,18,28,.72);color:#e8fff8;
+  backdrop-filter:blur(10px);
+  border-radius:999px;padding:8px 14px;font-size:12px;
+  cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.3);
+  max-width:min(92vw,360px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#az-theme-pill:hover{background:rgba(8,18,28,.88)}
+#az-theme-panel{
+  position:absolute;left:0;bottom:46px;
+  width:min(92vw,300px);
+  background:rgba(6,16,26,.94);color:#e8fff8;
+  border:1px solid rgba(47,255,192,.25);
+  border-radius:16px;padding:12px;
+  box-shadow:0 16px 40px rgba(0,0,0,.45);
+  backdrop-filter:blur(14px);
+}
+#az-theme-panel[hidden]{display:none!important}
+.az-row{font-size:11px;letter-spacing:1px;text-transform:uppercase;opacity:.7;margin:8px 0 6px}
+.az-head{font-size:13px;letter-spacing:0;text-transform:none;opacity:1;font-weight:bold;margin-top:0}
+.az-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.az-chip,.az-opt{
+  appearance:none;border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.06);color:#e8fff8;
+  border-radius:10px;padding:8px 8px;font-size:12px;cursor:pointer;text-align:left;
+}
+.az-chip.on,.az-opt.on{border-color:rgba(47,255,192,.7);background:rgba(47,255,192,.16)}
+.az-opt{width:100%;margin-bottom:4px}
+.az-geo{margin-top:8px}
+.az-meta{font-size:10px;opacity:.6;margin-top:8px;line-height:1.3}
+
+@media(max-width:700px){
+  nav a:not(.cta){display:none}
+  #hero{align-items:flex-start;padding-top:72px}
+  #hero .card{padding:16px;max-width:none}
+  #hero h1{font-size:40px}
+  #hero p{margin:4px 0;font-size:14px}
+  section{padding:10vh 5vw}
+  .meter{display:none}
+  #az-theme-wrap{left:10px;bottom:10px}
+  #az-theme-pill{font-size:11px;padding:7px 11px;max-width:78vw}
+  .hint{bottom:58px} /* keep above pill on mobile */
+}
+
+@media(prefers-reduced-motion:reduce){
+  .rv{opacity:1;transform:none;transition:none}
+  .hint{animation:none}
+  .btn:hover,nav .cta:hover,.card:hover{transform:none}
+}
+html.reduced-motion .rv{opacity:1;transform:none}
+html.reduced-motion .hint{animation:none}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<nav>
+  <b>Azteca<i>Web</i></b>
+  <div>
+    <a href="#servicios">Servicios</a>
+    <a href="#vision">Visión</a>
+    <a class="cta" href="#galaxy">Contacto</a>
+  </div>
+</nav>
+<div class="meter"><i></i></div>
+<div class="hint">↑ desliza hacia arriba</div>
+<main>
+<section id="galaxy">
+  <div class="card rv">
+    <p class="tag">Contacto</p>
+    <h2>Hasta las galaxias</h2>
+    <p>AztecaWeb — desarrollo de sistemas, Web3 e IA.</p>
+    <p><span class="ph">[PLACEHOLDER: datos de contacto]</span></p>
+    <a class="btn" href="#"><span class="ph">[PLACEHOLDER: CTA final]</span></a>
+    <p style="font-size:12px;opacity:.7">Mueve el cursor: la galaxia te sigue · clic: estrella fugaz</p>
+  </div>
+</section>
+<section id="vision">
+  <div class="card rv">
+    <p class="tag">Visión</p>
+    <h2>Más allá del cielo</h2>
+    <p><span class="ph">[PLACEHOLDER: texto de visión / misión]</span></p>
+  </div>
+</section>
+<section id="servicios" style="min-height:130vh">
+  <div class="svcs">
+    <div class="card rv"><div class="ico">⚙️</div><h2>Sistemas</h2><p>Desarrollo de sistemas.</p><p><span class="ph">[PLACEHOLDER: descripción]</span></p></div>
+    <div class="card rv"><div class="ico">⛓️</div><h2>Web3</h2><p>Soluciones Web3.</p><p><span class="ph">[PLACEHOLDER: descripción]</span></p></div>
+    <div class="card rv"><div class="ico">🧠</div><h2>IA</h2><p>Inteligencia artificial.</p><p><span class="ph">[PLACEHOLDER: descripción]</span></p></div>
+  </div>
+</section>
+<section id="hero">
+  <div class="card">
+    <p class="tag">Desarrollo de sistemas · Web3 · IA</p>
+    <h1>AztecaWeb</h1>
+    <p><span class="ph">[PLACEHOLDER: eslogan / propuesta de valor]</span></p>
+    <a class="btn" href="#galaxy"><span class="ph">[PLACEHOLDER: CTA principal]</span></a>
+  </div>
+</section>
+</main>
+<script>
+/* AztecaWeb v3 — time-of-day palettes + weather modulators + interpolation */
+(function (root) {
+  'use strict';
+
+  const TIMES = ['morning', 'afternoon', 'sunset', 'night'];
+  const WEATHERS = ['clear', 'cloudy', 'rain', 'storm'];
+
+  const TIME_LABELS = {
+    morning: 'Mañana',
+    afternoon: 'Tarde',
+    sunset: 'Atardecer',
+    night: 'Noche jade'
+  };
+  const WEATHER_LABELS = {
+    clear: 'Despejado',
+    cloudy: 'Nublado / Bruma',
+    rain: 'Lluvia',
+    storm: 'Tormenta'
+  };
+  const TIME_ICONS = { morning: '☀️', afternoon: '🌤️', sunset: '🌅', night: '🌙' };
+  const WEATHER_ICONS = { clear: '✨', cloudy: '☁️', rain: '🌧️', storm: '⛈️' };
+
+  /** Hour slot from local Date hours+minutes. */
+  function timeFromDate(d) {
+    const h = d.getHours() + d.getMinutes() / 60;
+    if (h >= 6 && h < 12) return 'morning';
+    if (h >= 12 && h < 17) return 'afternoon';
+    if (h >= 17 && h < 19.5) return 'sunset';
+    return 'night';
+  }
+
+  // ---------- palettes (canvas + CSS tokens) ----------
+  // skyKeys: [p, topHex, bottomHex] for vertical gradient keyed by scroll progress p
+  const PALETTES = {
+    morning: {
+      id: 'morning',
+      night: false,
+      arms: 4,
+      galCols: ['#ffe6b0', '#9ad0ff', '#ffffff', '#c89bff', '#fff8e8'],
+      galCore: 'rgba(255,248,230,0.9)',
+      nebula: [
+        ['rgba(120,200,255,0.45)', -0.15, 0, 0.7],
+        ['rgba(90,140,255,0.4)', 0.2, 0.05, 0.8],
+        ['rgba(255,220,160,0.3)', 0, -0.1, 0.5]
+      ],
+      sky: [
+        [0, '#1e4fa8', '#bfe9ff'],
+        [0.25, '#5ab2f0', '#fff8e8'],
+        [0.5, '#1e4fa8', '#7ec8f5'],
+        [0.7, '#0a1a48', '#1e4fa8'],
+        [1, '#070b24', '#0a1028']
+      ],
+      sea: ['#3ad4d8', '#1496b4', '#0c5978'],
+      sand: '#f3e4cb',
+      stone: ['#f3e4cb', '#c9a882', '#8a6540'],
+      cliff: ['#7a5a3e', '#c79a6a', '#5e4330'],
+      palmTrunk: '#5a3b22',
+      palmLeaf: ['#1d5a2c', '#4fa35a'],
+      sunCore: '#fff1c4',
+      sunGlow: 'rgba(255,220,140,',
+      sunRay: 'rgba(255,210,140,0.05)',
+      sunRef: 'rgba(255,230,160,',
+      moon: false,
+      doorGlow: ['#ffd27a', '#ffe9a8'],
+      doorDark: '#3a2414',
+      farLand: '#3b6a6a',
+      bird: '#2a2030',
+      cloudRgb: '255,240,230',
+      mist: 'rgba(220,235,245,0.0)',
+      // CSS tokens
+      cardBg: 'rgba(255,255,255,0.86)',
+      cardBgStorm: 'rgba(255,255,255,0.92)',
+      cardText: '#142033',
+      cardBorder: '1px solid rgba(20,32,51,0.08)',
+      accent: '#0b8f9e',
+      accentText: '#ffffff',
+      navText: '#142033',
+      navHalo: '0 1px 8px rgba(255,255,255,0.85)',
+      navBg: 'rgba(255,255,255,0.28)',
+      upperCardBg: 'rgba(15,20,40,0.55)',
+      upperCardText: '#ffffff'
+    },
+    afternoon: {
+      id: 'afternoon',
+      night: false,
+      arms: 4,
+      galCols: ['#ffe6b0', '#ffb36b', '#9ad0ff', '#ffffff', '#c89bff'],
+      galCore: 'rgba(255,240,210,0.9)',
+      nebula: [
+        ['rgba(255,140,80,0.45)', -0.15, 0, 0.7],
+        ['rgba(70,110,255,0.45)', 0.2, 0.05, 0.8],
+        ['rgba(200,90,255,0.3)', 0, -0.1, 0.5]
+      ],
+      sky: [
+        [0, '#4fa8ff', '#bfe6ff'],
+        [0.25, '#3a88e8', '#ffe8c8'],
+        [0.5, '#1d3c8c', '#6aa0e8'],
+        [0.7, '#0c1640', '#1d3c8c'],
+        [1, '#06081e', '#0a0c24']
+      ],
+      sea: ['#26b9c8', '#1280a0', '#0a4f70'],
+      sand: '#ecd0a4',
+      stone: ['#ecd0a4', '#ad7e52', '#7a5535'],
+      cliff: ['#7a5a3e', '#c79a6a', '#5e4330'],
+      palmTrunk: '#5a3b22',
+      palmLeaf: ['#1a5528', '#3f9448'],
+      sunCore: '#fff4c0',
+      sunGlow: 'rgba(255,200,100,',
+      sunRay: 'rgba(255,190,100,0.06)',
+      sunRef: 'rgba(255,220,140,',
+      moon: false,
+      doorGlow: ['#ffd27a', '#ffe9a8'],
+      doorDark: '#3a2414',
+      farLand: '#2f5a5a',
+      bird: '#2a2030',
+      cloudRgb: '255,235,210',
+      mist: 'rgba(220,230,240,0.0)',
+      cardBg: 'rgba(255,250,242,0.86)',
+      cardBgStorm: 'rgba(255,250,242,0.92)',
+      cardText: '#1b2440',
+      cardBorder: '1px solid rgba(27,36,64,0.08)',
+      accent: '#ff7a3d',
+      accentText: '#141018',
+      navText: '#1b2440',
+      navHalo: '0 1px 8px rgba(255,255,255,0.7)',
+      navBg: 'rgba(255,250,240,0.3)',
+      upperCardBg: 'rgba(15,10,35,0.5)',
+      upperCardText: '#ffffff'
+    },
+    sunset: {
+      id: 'sunset',
+      night: false,
+      arms: 4,
+      galCols: ['#ffe6b0', '#ffb36b', '#9ad0ff', '#ffffff', '#c89bff'],
+      galCore: 'rgba(255,240,210,0.9)',
+      nebula: [
+        ['rgba(255,120,80,0.55)', -0.15, 0, 0.7],
+        ['rgba(90,120,255,0.5)', 0.2, 0.05, 0.8],
+        ['rgba(200,90,255,0.35)', 0, -0.1, 0.5]
+      ],
+      sky: [
+        [0, '#ff9e5e', '#ffd08a'],
+        [0.25, '#5f7fd8', '#ffb07a'],
+        [0.5, '#2a3d8f', '#8a7ad0'],
+        [0.7, '#140f3d', '#3a2a7a'],
+        [1, '#05030f', '#0d0826']
+      ],
+      sea: ['#4fb6c8', '#1f7d9c', '#0b3550'],
+      sand: '#f2dcae',
+      stone: ['#e9c79a', '#a7784f', '#6e4a30'],
+      cliff: ['#7a5a3e', '#c79a6a', '#5e4330'],
+      palmTrunk: '#5a3b22',
+      palmLeaf: ['#1d5a2c', '#4fa35a'],
+      sunCore: '#fff1c4',
+      sunGlow: 'rgba(255,180,100,',
+      sunRay: 'rgba(255,160,80,0.06)',
+      sunRef: 'rgba(255,200,120,',
+      moon: false,
+      doorGlow: ['#ffd27a', '#ffe9a8'],
+      doorDark: '#3a2414',
+      farLand: '#3b6a6a',
+      bird: '#2a2030',
+      cloudRgb: '255,225,200',
+      mist: 'rgba(255,200,160,0.0)',
+      cardBg: 'rgba(255,250,240,0.82)',
+      cardBgStorm: 'rgba(255,250,240,0.90)',
+      cardText: '#1d1b33',
+      cardBorder: '1px solid rgba(29,27,51,0.08)',
+      accent: '#ff7a3d',
+      accentText: '#ffffff',
+      navText: '#ffffff',
+      navHalo: '0 1px 8px rgba(0,0,0,0.45)',
+      navBg: 'rgba(20,15,40,0.25)',
+      upperCardBg: 'rgba(15,10,35,0.5)',
+      upperCardText: '#ffffff'
+    },
+    night: {
+      id: 'night',
+      night: true,
+      arms: 4,
+      galCols: ['#5effd0', '#b48cff', '#ffe066', '#ffffff', '#3fb6a8'],
+      galCore: 'rgba(94,255,208,0.55)',
+      nebula: [
+        ['rgba(63,182,168,0.45)', -0.12, 0, 0.7],
+        ['rgba(180,140,255,0.4)', 0.18, 0.05, 0.75],
+        ['rgba(47,255,192,0.28)', 0, -0.12, 0.5]
+      ],
+      sky: [
+        [0, '#14607a', '#3fb6a8'],
+        [0.25, '#0b2a4a', '#14607a'],
+        [0.5, '#061828', '#0b2a4a'],
+        [0.7, '#020a1a', '#061828'],
+        [1, '#000004', '#020a1a']
+      ],
+      sea: ['#0f5560', '#0a3a48', '#05222e'],
+      sand: '#9bb7a6',
+      stone: ['#4f7d6e', '#3b6156', '#28463e'],
+      cliff: ['#3b6156', '#4f7d6e', '#28463e'],
+      palmTrunk: '#1a3328',
+      palmLeaf: ['#0b2f2a', '#175248'],
+      sunCore: '#e8f0ff',
+      sunGlow: 'rgba(94,255,208,',
+      sunRay: 'rgba(94,255,208,0.04)',
+      sunRef: 'rgba(94,255,208,',
+      moon: true,
+      doorGlow: ['#2fffc0', '#5effd0'],
+      doorDark: '#0a221c',
+      farLand: '#0a3a40',
+      bird: '#5effd0',
+      cloudRgb: '120,160,170',
+      mist: 'rgba(80,140,150,0.0)',
+      cardBg: 'rgba(4,20,30,0.78)',
+      cardBgStorm: 'rgba(4,20,30,0.90)',
+      cardText: '#e4fff9',
+      cardBorder: '1px solid rgba(47,255,192,0.28)',
+      accent: '#2fffc0',
+      accentText: '#062019',
+      navText: '#e4fff9',
+      navHalo: '0 1px 8px rgba(0,0,0,0.5)',
+      navBg: 'rgba(0,10,20,0.5)',
+      upperCardBg: 'rgba(4,20,30,0.72)',
+      upperCardText: '#e4fff9'
+    }
+  };
+
+  // Weather modulators — scalars & overlays blended onto a base palette
+  const WEATHER_MOD = {
+    clear: {
+      cloudDensity: 0.55,
+      cloudAlpha: 0.7,
+      mistAlpha: 0,
+      rainAlpha: 0,
+      rainDensity: 0,
+      waveAmp: 1,
+      palmBend: 1,
+      sunDiffuse: 1,
+      cardOpacityBoost: 0,
+      lightning: false,
+      sparkles: true,
+      birds: true,
+      lowCloudDark: 0
+    },
+    cloudy: {
+      cloudDensity: 1.15,
+      cloudAlpha: 0.92,
+      mistAlpha: 0.35,
+      rainAlpha: 0,
+      rainDensity: 0,
+      waveAmp: 1.05,
+      palmBend: 1.15,
+      sunDiffuse: 0.45,
+      cardOpacityBoost: 0.04,
+      lightning: false,
+      sparkles: false,
+      birds: false,
+      lowCloudDark: 0.25
+    },
+    rain: {
+      cloudDensity: 1.25,
+      cloudAlpha: 0.95,
+      mistAlpha: 0.28,
+      rainAlpha: 0.55,
+      rainDensity: 1,
+      waveAmp: 1.35,
+      palmBend: 1.4,
+      sunDiffuse: 0.25,
+      cardOpacityBoost: 0.06,
+      lightning: false,
+      sparkles: false,
+      birds: false,
+      lowCloudDark: 0.4
+    },
+    storm: {
+      cloudDensity: 1.45,
+      cloudAlpha: 1,
+      mistAlpha: 0.42,
+      rainAlpha: 0.78,
+      rainDensity: 1.6,
+      waveAmp: 1.7,
+      palmBend: 1.85,
+      sunDiffuse: 0.12,
+      cardOpacityBoost: 0.1,
+      lightning: true,
+      sparkles: false,
+      birds: false,
+      lowCloudDark: 0.6
+    }
+  };
+
+  // ---------- color helpers ----------
+  function hx(h) {
+    if (!h || h[0] !== '#') return [0, 0, 0];
+    const s = h.length === 4
+      ? '#' + h[1] + h[1] + h[2] + h[2] + h[3] + h[3]
+      : h;
+    return [parseInt(s.slice(1, 3), 16), parseInt(s.slice(3, 5), 16), parseInt(s.slice(5, 7), 16)];
+  }
+  function rgbStr(r, g, b, a) {
+    if (a === undefined || a >= 1) return 'rgb(' + Math.round(r) + ',' + Math.round(g) + ',' + Math.round(b) + ')';
+    return 'rgba(' + Math.round(r) + ',' + Math.round(g) + ',' + Math.round(b) + ',' + a + ')';
+  }
+  function mixHex(a, b, t) {
+    a = hx(a); b = hx(b);
+    return rgbStr(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t);
+  }
+  function mixRgba(a, b, t) {
+    const pa = parseRgba(a), pb = parseRgba(b);
+    return rgbStr(
+      pa[0] + (pb[0] - pa[0]) * t,
+      pa[1] + (pb[1] - pa[1]) * t,
+      pa[2] + (pb[2] - pa[2]) * t,
+      pa[3] + (pb[3] - pa[3]) * t
+    );
+  }
+  function parseRgba(s) {
+    if (!s) return [0, 0, 0, 1];
+    if (s[0] === '#') { const h = hx(s); return [h[0], h[1], h[2], 1]; }
+    const m = s.match(/([\d.]+)/g);
+    if (!m) return [0, 0, 0, 1];
+    return [+m[0], +m[1], +m[2], m[3] !== undefined ? +m[3] : 1];
+  }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
+  function ease(t) { return t * t * (3 - 2 * t); }
+
+  function keyCol(keys, p, idx) {
+    for (let i = 0; i < keys.length - 1; i++) {
+      if (p <= keys[i + 1][0]) {
+        const t = (p - keys[i][0]) / (keys[i + 1][0] - keys[i][0]);
+        return mixHex(keys[i][idx], keys[i + 1][idx], t);
+      }
+    }
+    return keys[keys.length - 1][idx];
+  }
+
+  function mixSkyKeys(a, b, t) {
+    // assume same stop positions
+    return a.map((k, i) => [k[0], mixHex(k[1], b[i][1], t), mixHex(k[2], b[i][2], t)]);
+  }
+
+  function mixPalette(a, b, t) {
+    t = clamp(t, 0, 1);
+    if (t <= 0) return clonePal(a);
+    if (t >= 1) return clonePal(b);
+    const out = {};
+    out.id = t < 0.5 ? a.id : b.id;
+    out.night = t < 0.5 ? a.night : b.night;
+    out.moon = t < 0.5 ? a.moon : b.moon;
+    out.arms = a.arms;
+    out.galCols = a.galCols.map((c, i) => mixHex(c, b.galCols[i % b.galCols.length], t));
+    out.galCore = mixRgba(a.galCore, b.galCore, t);
+    out.nebula = a.nebula.map((n, i) => {
+      const m = b.nebula[i] || b.nebula[0];
+      return [mixRgba(n[0], m[0], t), lerp(n[1], m[1], t), lerp(n[2], m[2], t), lerp(n[3], m[3], t)];
+    });
+    out.sky = mixSkyKeys(a.sky, b.sky, t);
+    out.sea = a.sea.map((c, i) => mixHex(c, b.sea[i], t));
+    out.sand = mixHex(a.sand, b.sand, t);
+    out.stone = a.stone.map((c, i) => mixHex(c, b.stone[i], t));
+    out.cliff = a.cliff.map((c, i) => mixHex(c, b.cliff[i], t));
+    out.palmTrunk = mixHex(a.palmTrunk, b.palmTrunk, t);
+    out.palmLeaf = a.palmLeaf.map((c, i) => mixHex(c, b.palmLeaf[i], t));
+    out.sunCore = mixHex(a.sunCore, b.sunCore, t);
+    out.sunGlow = t < 0.5 ? a.sunGlow : b.sunGlow;
+    out.sunRay = mixRgba(a.sunRay, b.sunRay, t);
+    out.sunRef = t < 0.5 ? a.sunRef : b.sunRef;
+    out.doorGlow = a.doorGlow.map((c, i) => mixHex(c, b.doorGlow[i], t));
+    out.doorDark = mixHex(a.doorDark, b.doorDark, t);
+    out.farLand = mixHex(a.farLand, b.farLand, t);
+    out.bird = mixHex(a.bird, b.bird, t);
+    out.cloudRgb = t < 0.5 ? a.cloudRgb : b.cloudRgb;
+    out.mist = mixRgba(a.mist, b.mist, t);
+    // CSS
+    out.cardBg = mixRgba(a.cardBg, b.cardBg, t);
+    out.cardBgStorm = mixRgba(a.cardBgStorm, b.cardBgStorm, t);
+    out.cardText = mixHex(a.cardText, b.cardText, t);
+    out.cardBorder = t < 0.5 ? a.cardBorder : b.cardBorder;
+    out.accent = mixHex(a.accent, b.accent, t);
+    out.accentText = mixHex(a.accentText, b.accentText, t);
+    out.navText = mixHex(a.navText, b.navText, t);
+    out.navHalo = t < 0.5 ? a.navHalo : b.navHalo;
+    out.navBg = mixRgba(a.navBg, b.navBg, t);
+    out.upperCardBg = mixRgba(a.upperCardBg, b.upperCardBg, t);
+    out.upperCardText = mixHex(a.upperCardText, b.upperCardText, t);
+    return out;
+  }
+
+  function clonePal(p) {
+    return JSON.parse(JSON.stringify(p));
+  }
+
+  function mixWeather(a, b, t) {
+    t = clamp(t, 0, 1);
+    const out = {};
+    for (const k of Object.keys(a)) {
+      if (typeof a[k] === 'number') out[k] = lerp(a[k], b[k], t);
+      else if (typeof a[k] === 'boolean') out[k] = t < 0.5 ? a[k] : b[k];
+      else out[k] = t < 0.5 ? a[k] : b[k];
+    }
+    return out;
+  }
+
+  /** Continuous wind factor 0..1.5 from km/h. */
+  function windFactor(kmh) {
+    return clamp((kmh || 12) / 40, 0.15, 1.6);
+  }
+
+  function applyCss(pal, wx) {
+    const rootEl = document.documentElement;
+    const stormy = (wx.cardOpacityBoost || 0) > 0.05;
+    const card = stormy ? pal.cardBgStorm : pal.cardBg;
+    rootEl.style.setProperty('--card-bg', card);
+    rootEl.style.setProperty('--card-text', pal.cardText);
+    rootEl.style.setProperty('--card-border', pal.cardBorder);
+    rootEl.style.setProperty('--accent', pal.accent);
+    rootEl.style.setProperty('--accent-text', pal.accentText);
+    rootEl.style.setProperty('--nav-text', pal.navText);
+    rootEl.style.setProperty('--nav-halo', pal.navHalo);
+    rootEl.style.setProperty('--nav-bg', pal.navBg);
+    rootEl.style.setProperty('--upper-card-bg', pal.upperCardBg);
+    rootEl.style.setProperty('--upper-card-text', pal.upperCardText);
+    rootEl.dataset.time = pal.id;
+    rootEl.dataset.night = pal.night ? '1' : '0';
+  }
+
+  root.AztecaThemes = {
+    TIMES, WEATHERS, TIME_LABELS, WEATHER_LABELS, TIME_ICONS, WEATHER_ICONS,
+    PALETTES, WEATHER_MOD,
+    timeFromDate, keyCol, mixHex, mixRgba, mixPalette, mixWeather,
+    windFactor, applyCss, lerp, clamp, ease, hx, parseRgba, clonePal
+  };
+})(typeof window !== 'undefined' ? window : global);
+
+/* AztecaWeb v3 — local clock, Open-Meteo, control pill, URL/API overrides */
+(function (root) {
+  'use strict';
+  const T = root.AztecaThemes;
+
+  const TZ_MAP = {
+    'America/Mexico_City': { name: 'Guadalajara', lat: 20.67, lon: -103.35 },
+    'America/Monterrey': { name: 'Monterrey', lat: 25.67, lon: -100.31 },
+    'America/Mazatlan': { name: 'Mazatlán', lat: 23.25, lon: -106.41 },
+    'America/Tijuana': { name: 'Tijuana', lat: 32.51, lon: -117.04 },
+    'America/Cancun': { name: 'Tulum', lat: 20.21, lon: -87.46 },
+    'America/Merida': { name: 'Mérida', lat: 20.97, lon: -89.62 },
+    'America/Bahia_Banderas': { name: 'Puerto Vallarta', lat: 20.65, lon: -105.23 },
+    'America/Chihuahua': { name: 'Chihuahua', lat: 28.63, lon: -106.07 },
+    'America/Hermosillo': { name: 'Hermosillo', lat: 29.07, lon: -110.96 },
+    'America/New_York': { name: 'Nueva York', lat: 40.71, lon: -74.01 },
+    'America/Chicago': { name: 'Chicago', lat: 41.88, lon: -87.63 },
+    'America/Denver': { name: 'Denver', lat: 39.74, lon: -104.99 },
+    'America/Los_Angeles': { name: 'Los Ángeles', lat: 34.05, lon: -118.24 },
+    'America/Phoenix': { name: 'Phoenix', lat: 33.45, lon: -112.07 },
+    'America/Bogota': { name: 'Bogotá', lat: 4.71, lon: -74.07 },
+    'America/Lima': { name: 'Lima', lat: -12.05, lon: -77.04 },
+    'America/Santiago': { name: 'Santiago', lat: -33.45, lon: -70.67 },
+    'America/Buenos_Aires': { name: 'Buenos Aires', lat: -34.60, lon: -58.38 },
+    'America/Argentina/Buenos_Aires': { name: 'Buenos Aires', lat: -34.60, lon: -58.38 },
+    'America/Sao_Paulo': { name: 'São Paulo', lat: -23.55, lon: -46.63 },
+    'Europe/Madrid': { name: 'Madrid', lat: 40.42, lon: -3.70 },
+    'Europe/London': { name: 'Londres', lat: 51.51, lon: -0.13 },
+    'Europe/Paris': { name: 'París', lat: 48.86, lon: 2.35 },
+    'Europe/Berlin': { name: 'Berlín', lat: 52.52, lon: 13.41 },
+    'UTC': { name: 'Tulum', lat: 20.21, lon: -87.46 }
+  };
+  const FALLBACK = { name: 'Tulum', lat: 20.21, lon: -87.46 };
+  const CACHE_KEY = 'aztecaweb_wx_v3';
+  const CACHE_TTL = 25 * 60 * 1000;
+  const WX_TIMEOUT = 2500;
+
+  // ---- state (synchronous initial clock — no FOUC) ----
+  const state = {
+    mode: 'auto',          // 'auto' | 'manual'
+    time: T.timeFromDate(new Date()),
+    weather: 'clear',
+    windKmh: 12,
+    place: FALLBACK.name,
+    lat: FALLBACK.lat,
+    lon: FALLBACK.lon,
+    source: 'clock',
+    loading: false,
+    lastError: null
+  };
+
+  // Resolve place from timezone immediately
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const hit = TZ_MAP[tz] || FALLBACK;
+    state.place = hit.name;
+    state.lat = hit.lat;
+    state.lon = hit.lon;
+    state.tz = tz;
+  } catch (e) {
+    state.tz = 'UTC';
+  }
+
+  const listeners = [];
+  function emit() { listeners.forEach(fn => { try { fn(getSnapshot()); } catch (e) {} }); }
+  function onChange(fn) { listeners.push(fn); return () => { const i = listeners.indexOf(fn); if (i >= 0) listeners.splice(i, 1); }; }
+  function getSnapshot() {
+    return {
+      mode: state.mode,
+      time: state.time,
+      weather: state.weather,
+      windKmh: state.windKmh,
+      windFactor: T.windFactor(state.windKmh),
+      place: state.place,
+      lat: state.lat,
+      lon: state.lon,
+      source: state.source,
+      loading: state.loading,
+      lastError: state.lastError
+    };
+  }
+
+  function mapWmo(code, cloudCover) {
+    const c = code | 0;
+    if (c === 0) return 'clear';
+    if (c === 1) return (cloudCover >= 60) ? 'cloudy' : 'clear';
+    if (c === 2 || c === 3 || c === 45 || c === 48) return 'cloudy';
+    if ((c >= 51 && c <= 67) || (c >= 80 && c <= 82)) return 'rain';
+    if ((c >= 71 && c <= 77) || (c >= 85 && c <= 86)) return 'cloudy';
+    if (c === 95 || c === 96 || c === 99) return 'storm';
+    if (cloudCover >= 70) return 'cloudy';
+    return 'clear';
+  }
+
+  function readCache() {
+    try {
+      const raw = sessionStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const o = JSON.parse(raw);
+      if (!o || !o.ts || Date.now() - o.ts > CACHE_TTL) return null;
+      return o;
+    } catch (e) { return null; }
+  }
+  function writeCache(data) {
+    try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(Object.assign({ ts: Date.now() }, data))); } catch (e) {}
+  }
+
+  async function fetchWeather(lat, lon) {
+    const ctrl = new AbortController();
+    const to = setTimeout(() => ctrl.abort(), WX_TIMEOUT);
+    try {
+      const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat +
+        '&longitude=' + lon + '&current=weather_code,cloud_cover,wind_speed_10m';
+      const res = await fetch(url, { signal: ctrl.signal });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const j = await res.json();
+      const cur = j.current || {};
+      const weather = mapWmo(cur.weather_code, cur.cloud_cover);
+      const windKmh = typeof cur.wind_speed_10m === 'number' ? cur.wind_speed_10m : 12;
+      return { weather, windKmh, code: cur.weather_code, cloud: cur.cloud_cover };
+    } finally {
+      clearTimeout(to);
+    }
+  }
+
+  async function refreshAuto() {
+    if (state.mode !== 'auto') return;
+    // apply clock immediately
+    state.time = T.timeFromDate(new Date());
+    const cached = readCache();
+    if (cached && Math.abs(cached.lat - state.lat) < 0.05 && Math.abs(cached.lon - state.lon) < 0.05) {
+      state.weather = cached.weather || 'clear';
+      state.windKmh = cached.windKmh || 12;
+      state.source = 'cache';
+      emit();
+      return;
+    }
+    state.loading = true;
+    emit();
+    try {
+      const wx = await fetchWeather(state.lat, state.lon);
+      if (state.mode !== 'auto') return;
+      state.weather = wx.weather;
+      state.windKmh = wx.windKmh;
+      state.source = 'open-meteo';
+      state.lastError = null;
+      writeCache({ lat: state.lat, lon: state.lon, weather: wx.weather, windKmh: wx.windKmh, place: state.place });
+    } catch (e) {
+      state.lastError = String(e && e.message || e);
+      // keep clear + gentle breeze offline fallback
+      if (state.source === 'clock') {
+        state.weather = 'clear';
+        state.windKmh = 12;
+      }
+      state.source = 'fallback';
+    } finally {
+      state.loading = false;
+      emit();
+    }
+  }
+
+  function setManual(opts) {
+    state.mode = 'manual';
+    if (opts.time && T.TIMES.indexOf(opts.time) >= 0) state.time = opts.time;
+    if (opts.weather && T.WEATHERS.indexOf(opts.weather) >= 0) state.weather = opts.weather;
+    if (typeof opts.windKmh === 'number') state.windKmh = opts.windKmh;
+    state.source = 'manual';
+    emit();
+  }
+
+  function setAuto() {
+    state.mode = 'auto';
+    state.time = T.timeFromDate(new Date());
+    state.source = 'clock';
+    emit();
+    refreshAuto();
+  }
+
+  function setAztecaTheme(opts) {
+    opts = opts || {};
+    if (opts.mode === 'auto') { setAuto(); return getSnapshot(); }
+    const o = {};
+    if (opts.time) o.time = String(opts.time).toLowerCase();
+    if (opts.weather) o.weather = String(opts.weather).toLowerCase();
+    if (typeof opts.windKmh === 'number') o.windKmh = opts.windKmh;
+    // aliases
+    if (o.time === 'jade' || o.time === 'noche' || o.time === 'nochejade') o.time = 'night';
+    if (o.time === 'manana' || o.time === 'mañana') o.time = 'morning';
+    if (o.time === 'tarde') o.time = 'afternoon';
+    if (o.time === 'atardecer') o.time = 'sunset';
+    if (o.weather === 'nublado' || o.weather === 'mist' || o.weather === 'bruma') o.weather = 'cloudy';
+    if (o.weather === 'lluvia') o.weather = 'rain';
+    if (o.weather === 'tormenta') o.weather = 'storm';
+    if (o.weather === 'despejado') o.weather = 'clear';
+    setManual(o);
+    return getSnapshot();
+  }
+
+  function applyQueryParams() {
+    try {
+      const q = new URLSearchParams(location.search);
+      const time = q.get('time');
+      const weather = q.get('weather');
+      const mode = q.get('mode');
+      const wind = q.get('wind');
+      if (mode === 'auto') { setAuto(); return true; }
+      if (time || weather) {
+        const o = {};
+        if (time) o.time = time;
+        if (weather) o.weather = weather;
+        if (wind) o.windKmh = parseFloat(wind);
+        setAztecaTheme(o);
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  function useExactLocation() {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocalización no disponible'));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          state.lat = pos.coords.latitude;
+          state.lon = pos.coords.longitude;
+          state.place = 'Tu ubicación';
+          try {
+            const wx = await fetchWeather(state.lat, state.lon);
+            state.weather = wx.weather;
+            state.windKmh = wx.windKmh;
+            state.time = T.timeFromDate(new Date());
+            state.mode = 'auto';
+            state.source = 'geolocation';
+            writeCache({ lat: state.lat, lon: state.lon, weather: wx.weather, windKmh: wx.windKmh, place: state.place });
+            emit();
+            resolve(getSnapshot());
+          } catch (e) {
+            state.lastError = String(e && e.message || e);
+            emit();
+            reject(e);
+          }
+        },
+        (err) => reject(err),
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+      );
+    });
+  }
+
+  // ---------- Control pill UI ----------
+  function buildPill() {
+    if (document.getElementById('az-theme-pill')) return;
+    const wrap = document.createElement('div');
+    wrap.id = 'az-theme-wrap';
+    wrap.innerHTML = [
+      '<button type="button" id="az-theme-pill" aria-expanded="false" aria-controls="az-theme-panel" aria-haspopup="dialog">',
+      '  <span id="az-pill-label">Auto</span>',
+      '</button>',
+      '<div id="az-theme-panel" role="dialog" aria-label="Tema visual" hidden>',
+      '  <div class="az-row az-head">Tema visual</div>',
+      '  <button type="button" class="az-opt" data-mode="auto">⏱ Automático (tiempo real)</button>',
+      '  <div class="az-row">Hora</div>',
+      '  <div class="az-grid" id="az-times"></div>',
+      '  <div class="az-row">Clima</div>',
+      '  <div class="az-grid" id="az-weathers"></div>',
+      '  <button type="button" class="az-opt az-geo" id="az-geo">📍 Usar mi ubicación exacta</button>',
+      '  <div class="az-meta" id="az-meta"></div>',
+      '</div>'
+    ].join('');
+    document.body.appendChild(wrap);
+
+    const times = document.getElementById('az-times');
+    T.TIMES.forEach(id => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'az-chip';
+      b.dataset.time = id;
+      b.textContent = T.TIME_ICONS[id] + ' ' + T.TIME_LABELS[id];
+      times.appendChild(b);
+    });
+    const weathers = document.getElementById('az-weathers');
+    T.WEATHERS.forEach(id => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'az-chip';
+      b.dataset.weather = id;
+      b.textContent = T.WEATHER_ICONS[id] + ' ' + T.WEATHER_LABELS[id];
+      weathers.appendChild(b);
+    });
+
+    const pill = document.getElementById('az-theme-pill');
+    const panel = document.getElementById('az-theme-panel');
+
+    function close() {
+      panel.hidden = true;
+      pill.setAttribute('aria-expanded', 'false');
+    }
+    function open() {
+      panel.hidden = false;
+      pill.setAttribute('aria-expanded', 'true');
+      syncUi();
+    }
+    pill.addEventListener('click', () => { panel.hidden ? open() : close(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+    document.addEventListener('click', e => {
+      if (!wrap.contains(e.target)) close();
+    });
+
+    panel.querySelector('[data-mode="auto"]').addEventListener('click', () => { setAuto(); });
+    times.addEventListener('click', e => {
+      const b = e.target.closest('[data-time]');
+      if (!b) return;
+      setManual({ time: b.dataset.time, weather: state.weather, windKmh: state.windKmh });
+    });
+    weathers.addEventListener('click', e => {
+      const b = e.target.closest('[data-weather]');
+      if (!b) return;
+      setManual({ time: state.time, weather: b.dataset.weather, windKmh: state.windKmh });
+    });
+    document.getElementById('az-geo').addEventListener('click', async () => {
+      const btn = document.getElementById('az-geo');
+      btn.textContent = '⏳ Obteniendo ubicación…';
+      try {
+        await useExactLocation();
+        btn.textContent = '✓ Ubicación actualizada';
+      } catch (e) {
+        btn.textContent = '📍 No se pudo obtener · reintentar';
+      }
+      setTimeout(() => { btn.textContent = '📍 Usar mi ubicación exacta'; }, 2500);
+    });
+
+    function syncUi() {
+      const s = getSnapshot();
+      const modeLab = s.mode === 'auto' ? 'Auto' : 'Manual';
+      document.getElementById('az-pill-label').textContent =
+        modeLab + ' · ' + T.TIME_ICONS[s.time] + ' ' + T.TIME_LABELS[s.time] +
+        ' · ' + T.WEATHER_LABELS[s.weather];
+      panel.querySelectorAll('[data-time]').forEach(b => {
+        b.classList.toggle('on', b.dataset.time === s.time);
+      });
+      panel.querySelectorAll('[data-weather]').forEach(b => {
+        b.classList.toggle('on', b.dataset.weather === s.weather);
+      });
+      panel.querySelector('[data-mode="auto"]').classList.toggle('on', s.mode === 'auto');
+      const meta = document.getElementById('az-meta');
+      meta.textContent = s.place + ' · viento ' + Math.round(s.windKmh) + ' km/h' +
+        (s.source ? ' · ' + s.source : '') + (s.loading ? ' · …' : '');
+    }
+    onChange(syncUi);
+    syncUi();
+  }
+
+  // boot
+  function init() {
+    const hadQuery = applyQueryParams();
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', buildPill);
+    } else {
+      buildPill();
+    }
+    if (!hadQuery) refreshAuto();
+    // refresh clock every minute in auto mode
+    setInterval(() => {
+      if (state.mode === 'auto') {
+        const nt = T.timeFromDate(new Date());
+        if (nt !== state.time) { state.time = nt; emit(); }
+      }
+    }, 30000);
+  }
+
+  root.AztecaWeather = {
+    init, onChange, getSnapshot, setAztecaTheme, setAuto, setManual,
+    useExactLocation, refreshAuto, state
+  };
+  root.setAztecaTheme = setAztecaTheme;
+})(typeof window !== 'undefined' ? window : global);
+
+/* AztecaWeb v3 — 5-layer canvas engine + theme interpolation + reduced-motion */
+(function (root) {
+  'use strict';
+  const T = root.AztecaThemes;
+  const WX = root.AztecaWeather;
+
+  const cv = document.getElementById('bg');
+  const c = cv.getContext('2d');
+  let W, H, mob, mx = 0.5, my = 0.5, hoverT = 0, ripples = [], shoot = [];
+  let stars = [], gal = [], clouds = [], rainDrops = [];
+  let geo = {};
+  let reduced = false;
+  let rafId = 0;
+  let needsPaint = true;
+  let lightningFlash = 0;
+  let nextLightning = 0;
+
+  // live interpolated theme
+  let curPal = T.clonePal(T.PALETTES.sunset);
+  let curWx = Object.assign({}, T.WEATHER_MOD.clear);
+  let curWind = 0.35;
+  let fromPal = curPal, toPal = curPal, fromWx = curWx, toWx = curWx;
+  let fromWind = curWind, toWind = curWind;
+  let blendT = 1, blendStart = 0;
+  const BLEND_MS = 800;
+
+  const rnd = (a = 1, b) => b === undefined ? Math.random() * a : a + Math.random() * (b - a);
+  const sm = (a, b, x) => { x = Math.min(1, Math.max(0, (x - a) / (b - a))); return x * x * (3 - 2 * x); };
+
+  function poly(pts) {
+    c.beginPath();
+    pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y));
+    c.closePath();
+  }
+
+  function initScene() {
+    W = cv.width = innerWidth;
+    H = cv.height = innerHeight;
+    mob = W < 700;
+    stars = [...Array(500)].map(() => ({ x: rnd(), y: rnd(), s: rnd(0.5, 2), ph: rnd(6.28) }));
+    const arms = curPal.arms || 4;
+    gal = [...Array(mob ? 1400 : 2600)].map((_, i) => {
+      const r = Math.pow(rnd(), 0.6);
+      return { r, a: (i % arms) * 6.283 / arms + r * 4 + rnd(-0.35, 0.35), ci: (rnd(curPal.galCols.length)) | 0, s: rnd(0.5, 2.2) };
+    });
+    clouds = [...Array(18)].map(() => ({
+      x: rnd(-0.2, 1.2), wy: rnd(0.7, 3.2), w: rnd(0.12, 0.32),
+      sp: rnd(0.00004, 0.00016), z: rnd(0.55, 1.35), dark: rnd()
+    }));
+    rainDrops = [...Array(220)].map(() => ({
+      x: rnd(), y: rnd(), len: rnd(10, 22), sp: rnd(0.012, 0.028), z: rnd(0.6, 1.2)
+    }));
+    needsPaint = true;
+  }
+
+  function layout() {
+    const cx = mob ? W * 0.55 : W * 0.66;
+    const pw = mob ? W * 0.6 : Math.min(W * 0.26, H * 0.5);
+    const hy = H * (mob ? 0.64 : 0.6);
+    const py = H * (mob ? 0.74 : 0.7);
+    geo = { cx, pw, hy, py };
+  }
+
+  const prog = () => {
+    const m = document.documentElement.scrollHeight - innerHeight;
+    return m > 0 ? 1 - scrollY / m : 0;
+  };
+  const dist = () => document.documentElement.scrollHeight - innerHeight - scrollY;
+
+  function startBlend(nextTime, nextWeather, nextWind) {
+    fromPal = curPal;
+    toPal = T.PALETTES[nextTime] || T.PALETTES.sunset;
+    fromWx = curWx;
+    toWx = T.WEATHER_MOD[nextWeather] || T.WEATHER_MOD.clear;
+    fromWind = curWind;
+    toWind = nextWind;
+    blendStart = performance.now();
+    blendT = 0;
+    // rebuild galaxy colors reference
+    needsPaint = true;
+    if (reduced) {
+      blendT = 1;
+      curPal = T.clonePal(toPal);
+      curWx = Object.assign({}, toWx);
+      curWind = toWind;
+      T.applyCss(curPal, curWx);
+      paint();
+    }
+  }
+
+  function tickBlend(now) {
+    if (blendT >= 1) return;
+    const dur = reduced ? 1 : BLEND_MS;
+    blendT = Math.min(1, (now - blendStart) / dur);
+    const e = T.ease(blendT);
+    curPal = T.mixPalette(fromPal, toPal, e);
+    curWx = T.mixWeather(fromWx, toWx, e);
+    curWind = T.lerp(fromWind, toWind, e);
+    T.applyCss(curPal, curWx);
+    needsPaint = true;
+  }
+
+  // ---------- Layer 1: Sky & Galaxy ----------
+  function layerSky(p, now) {
+    const g = c.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, T.keyCol(curPal.sky, Math.min(1, p + 0.08), 1));
+    g.addColorStop(1, T.keyCol(curPal.sky, p, 2));
+    c.fillStyle = g;
+    c.fillRect(0, 0, W, H);
+
+    // storm darkening veil on sky
+    if (curWx.lowCloudDark > 0.01) {
+      c.fillStyle = 'rgba(10,15,30,' + (curWx.lowCloudDark * 0.35) + ')';
+      c.fillRect(0, 0, W, H);
+    }
+
+    const sa = sm(0.35, 0.75, p);
+    const t = reduced ? 0 : now / 1000;
+    if (sa > 0) {
+      for (const s of stars) {
+        const a = sa * (reduced ? 0.7 : (0.5 + 0.5 * Math.sin(t * 2 + s.ph)));
+        c.globalAlpha = a;
+        c.fillStyle = '#fff';
+        const x = s.x * W + (mx - 0.5) * -20 * s.s;
+        const y = s.y * H + (my - 0.5) * -20 * s.s;
+        c.beginPath(); c.arc(x, y, s.s * 0.8, 0, 6.28); c.fill();
+      }
+      c.globalAlpha = 1;
+    }
+
+    const ga = sm(0.58, 0.95, p);
+    if (ga > 0) {
+      const R = Math.max(W, H) * 0.6;
+      const cx = W * (0.5 + (mx - 0.5) * 0.12);
+      const cy = H * (0.45 + (my - 0.5) * 0.12) + (1 - ga) * H * 0.4;
+      c.save();
+      c.globalCompositeOperation = 'lighter';
+      for (const [col, ox, oy, rr] of curPal.nebula) {
+        const ng = c.createRadialGradient(cx + ox * W, cy + oy * H, 0, cx + ox * W, cy + oy * H, rr * R);
+        ng.addColorStop(0, col);
+        ng.addColorStop(1, 'rgba(0,0,0,0)');
+        c.globalAlpha = ga * 0.7;
+        c.fillStyle = ng;
+        c.fillRect(0, 0, W, H);
+      }
+      const rot = reduced ? 0 : t * 0.05;
+      for (const g2 of gal) {
+        const a = g2.a + rot * (1.3 - g2.r);
+        const x = cx + Math.cos(a) * g2.r * R;
+        const y = cy + Math.sin(a) * g2.r * R * 0.42;
+        c.globalAlpha = ga * (1 - g2.r * 0.6);
+        c.fillStyle = curPal.galCols[g2.ci % curPal.galCols.length];
+        c.fillRect(x, y, g2.s, g2.s);
+      }
+      const core = c.createRadialGradient(cx, cy, 0, cx, cy, R * 0.18);
+      core.addColorStop(0, curPal.galCore);
+      core.addColorStop(1, 'rgba(0,0,0,0)');
+      c.globalAlpha = ga;
+      c.fillStyle = core;
+      c.fillRect(0, 0, W, H);
+      c.restore();
+    }
+
+    if (!reduced) {
+      for (const s of shoot) {
+        c.strokeStyle = 'rgba(255,255,255,' + s.l / 60 + ')';
+        c.lineWidth = 2;
+        c.beginPath(); c.moveTo(s.x, s.y); c.lineTo(s.x - s.vx * 8, s.y - s.vy * 8); c.stroke();
+        s.x += s.vx; s.y += s.vy; s.l--;
+      }
+      shoot = shoot.filter(s => s.l > 0);
+    }
+  }
+
+  // ---------- Layer 2: Sun / Jade Moon + reflection ----------
+  function layerSunMoon(p, d, now) {
+    const a = (1 - sm(0.3, 0.6, p)) * curWx.sunDiffuse;
+    if (a <= 0.01) return;
+    const x = W * (mob ? 0.25 : 0.3);
+    const y = H * 0.42 + d * 0.35;
+    c.save();
+    c.globalAlpha = a;
+    if (curPal.moon) {
+      // jade-silver moon
+      for (let i = 6; i > 0; i--) {
+        c.fillStyle = curPal.sunGlow + (0.05 * i / 6) + ')';
+        c.beginPath(); c.arc(x, y, 34 + i * 28, 0, 6.28); c.fill();
+      }
+      c.fillStyle = curPal.sunCore;
+      c.beginPath(); c.arc(x, y, 38, 0, 6.28); c.fill();
+      // soft crater tint
+      c.globalAlpha = a * 0.25;
+      c.fillStyle = '#b8c8e0';
+      c.beginPath(); c.arc(x - 10, y - 6, 8, 0, 6.28); c.fill();
+      c.beginPath(); c.arc(x + 12, y + 8, 5, 0, 6.28); c.fill();
+    } else {
+      for (let i = 6; i > 0; i--) {
+        c.fillStyle = curPal.sunGlow + (0.06 * i / 6) + ')';
+        c.beginPath(); c.arc(x, y, 40 + i * 38, 0, 6.28); c.fill();
+      }
+      c.fillStyle = curPal.sunCore;
+      c.beginPath(); c.arc(x, y, 46, 0, 6.28); c.fill();
+      if (!reduced) {
+        c.globalCompositeOperation = 'lighter';
+        const t = now / 4000;
+        for (let i = 0; i < 10; i++) {
+          const an = i * 0.63 + t;
+          c.fillStyle = curPal.sunRay;
+          c.beginPath(); c.moveTo(x, y); c.arc(x, y, H, an, an + 0.12); c.fill();
+        }
+      }
+    }
+    c.restore();
+  }
+
+  function sunRef(hy, now) {
+    const a = curWx.sunDiffuse;
+    if (a < 0.05) return;
+    const x = W * (mob ? 0.25 : 0.3);
+    const t = reduced ? 0 : now / 1000;
+    c.save();
+    c.globalAlpha = a;
+    for (let i = 0; i < 26; i++) {
+      const y = hy + 8 + i * i * 0.9;
+      const w = (60 - i * 1.5) * (1 + 0.3 * Math.sin(t * 3 + i));
+      c.fillStyle = curPal.sunRef + (0.55 - i * 0.018) + ')';
+      c.fillRect(x - w / 2 + Math.sin(t * 2 + i) * 8, y, w, 2 + i * 0.15);
+    }
+    c.restore();
+  }
+
+  // ---------- Layer 3: Clouds & mist ----------
+  function layerClouds(d, p, now) {
+    const ca = (1 - sm(0.55, 0.8, p)) * curWx.cloudAlpha;
+    if (ca <= 0.01) return;
+    const t = now;
+    const wind = curWind;
+    c.save();
+    c.globalAlpha = ca;
+    const nShow = Math.min(clouds.length, Math.round(clouds.length * curWx.cloudDensity));
+    for (let i = 0; i < nShow; i++) {
+      const cl = clouds[i];
+      if (!reduced) {
+        cl.x += cl.sp * cl.z * 16 * (0.6 + wind);
+        if (cl.x > 1.3) cl.x = -0.3;
+      }
+      const x = (cl.x + (mx - 0.5) * 0.03 * cl.z) * W;
+      const y = H - (cl.wy * H - d) * cl.z * 0.9 - H * 0.4;
+      const w = cl.w * W * (mob ? 1.8 : 1);
+      if (y < -200 || y > H + 100) continue;
+      drawCloud(x, y, w, p, cl.dark);
+    }
+    c.restore();
+
+    // coastal mist bank
+    if (curWx.mistAlpha > 0.01 && p < 0.7) {
+      const ma = curWx.mistAlpha * (1 - sm(0.45, 0.7, p));
+      const hy = geo.hy || H * 0.6;
+      const mg = c.createLinearGradient(0, hy - 80 + d, 0, hy + 40 + d);
+      mg.addColorStop(0, 'rgba(200,220,230,0)');
+      mg.addColorStop(0.5, 'rgba(180,200,215,' + ma + ')');
+      mg.addColorStop(1, 'rgba(160,180,200,0)');
+      c.fillStyle = mg;
+      c.fillRect(0, hy - 100 + d, W, 160);
+    }
+  }
+
+  function drawCloud(x, y, w, p, dark) {
+    let col = curPal.cloudRgb;
+    if (curWx.lowCloudDark > 0.1 && dark > 0.4) {
+      // darker storm clouds
+      const parts = col.split(',').map(Number);
+      const f = 1 - curWx.lowCloudDark * 0.55;
+      col = Math.round(parts[0] * f) + ',' + Math.round(parts[1] * f) + ',' + Math.round(parts[2] * f);
+    } else if (p > 0.35) {
+      // cooler tint higher up
+      const parts = col.split(',').map(Number);
+      col = Math.round(parts[0] * 0.92) + ',' + Math.round(parts[1] * 0.92) + ',' + Math.min(255, Math.round(parts[2] * 1.05));
+    }
+    for (let i = 0; i < 7; i++) {
+      const g = c.createRadialGradient(x + i * w * 0.13, y - Math.sin(i) * w * 0.08, 0, x + i * w * 0.13, y, w * 0.22);
+      g.addColorStop(0, 'rgba(' + col + ',0.8)');
+      g.addColorStop(1, 'rgba(' + col + ',0)');
+      c.fillStyle = g;
+      c.beginPath(); c.arc(x + i * w * 0.13, y - Math.sin(i) * w * 0.08, w * 0.22, 0, 6.28); c.fill();
+    }
+  }
+
+  // ---------- Layer 4: Sea, cliff, temple, palms ----------
+  function layerScene(d, p, now) {
+    if (d > H * 1.4) return;
+    const t = reduced ? 0 : now / 1000;
+    layout();
+    const { cx, pw, hy, py } = geo;
+    c.save();
+    c.translate(0, d);
+
+    // sea
+    const sg = c.createLinearGradient(0, hy, 0, H);
+    sg.addColorStop(0, curPal.sea[0]);
+    sg.addColorStop(0.5, curPal.sea[1]);
+    sg.addColorStop(1, curPal.sea[2]);
+    c.fillStyle = sg;
+    c.fillRect(0, hy, W, H - hy);
+
+    sunRef(hy, now);
+
+    // far coast
+    c.fillStyle = curPal.farLand;
+    c.beginPath();
+    c.moveTo(0, hy);
+    for (let x = 0; x <= W * 0.35; x += 20) {
+      c.lineTo(x, hy - 14 - Math.sin(x * 0.05) * 5 - Math.sin(x * 0.013) * 10);
+    }
+    c.lineTo(W * 0.35, hy);
+    c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.2)';
+    c.fillRect(0, hy, W, 1.5);
+
+    // cliff
+    const L = cx - pw * 0.95, R = cx + pw * 1.1, top = py;
+    const cg = c.createLinearGradient(L, 0, R, 0);
+    cg.addColorStop(0, curPal.cliff[0]);
+    cg.addColorStop(0.5, curPal.cliff[1]);
+    cg.addColorStop(1, curPal.cliff[2]);
+    const pts = [[L - pw * 0.3, H], [L - pw * 0.15, hy + 30], [L, top + 20], [L + pw * 0.1, top],
+      [R - pw * 0.05, top], [R, top + 15], [R + pw * 0.25, hy + 20], [R + pw * 0.5, H]];
+    poly(pts); c.fillStyle = cg; c.fill();
+    // cliff top vegetation
+    c.fillStyle = curPal.palmLeaf[0];
+    poly([[L, top + 4], [L + pw * 0.1, top - 8], [R - pw * 0.05, top - 8], [R, top + 6], [R, top + 14], [L, top + 14]]);
+    c.fill();
+    c.strokeStyle = 'rgba(60,35,20,0.3)';
+    c.lineWidth = 2;
+    for (let i = 0; i < 14; i++) {
+      const x = L + ((i * 97) % 100) / 100 * (R - L);
+      const y = top + 30 + ((i * 53) % 100) / 100 * (hy - top);
+      c.beginPath(); c.moveTo(x, y); c.lineTo(x + 18, y + 10); c.lineTo(x + 6, y + 24); c.stroke();
+    }
+    for (let i = 0; i < 9; i++) {
+      const x = L + i * (R - L) / 8;
+      c.fillStyle = i % 2 ? curPal.palmLeaf[0] : curPal.palmLeaf[1];
+      c.beginPath(); c.arc(x, top - 4, pw * 0.07, 0, 6.28); c.fill();
+    }
+
+    // temple
+    geo.temple = [cx - pw * 0.5, top - pw * 0.62, pw, pw * 0.62];
+    drawTemple(cx, top, pw, hoverT, t);
+
+    // palms
+    const bendBase = curWx.palmBend * curWind;
+    const palms = mob
+      ? [[L - pw * 0.05, top + pw * 0.25, 0.7], [R - pw * 0.05, top + pw * 0.05, 0.8], [W * 0.12, H * 0.92, 1]]
+      : [[L + pw * 0.05, top + pw * 0.05, 0.8], [R - pw * 0.15, top + pw * 0.02, 0.9], [R + pw * 0.25, top + pw * 0.3, 0.7], [W * 0.05, H * 0.98, 1], [W * 0.17, H * 1.0, 0.8]];
+    palms.forEach(([x, y, s], i) => {
+      const sway = reduced ? 0 : Math.sin(t * 1.3 + i) * 0.06 * bendBase + (mx - 0.5) * 0.05;
+      drawPalm(x, y, s * pw / 260 * (mob ? 1.3 : 1), sway, i, t);
+    });
+
+    // waves
+    drawWaves(hy, t);
+
+    // ripples
+    if (!reduced) {
+      for (const r of ripples) {
+        r.r += 3;
+        c.strokeStyle = 'rgba(255,255,255,' + Math.max(0, 1 - r.r / 120) + ')';
+        c.lineWidth = 2;
+        c.beginPath(); c.ellipse(r.x, r.y - d, r.r, r.r * 0.3, 0, 0, 6.28); c.stroke();
+      }
+      ripples = ripples.filter(r => r.r < 120);
+    }
+
+    // raindrop ripples on sea (when raining, below galaxy)
+    if (curWx.rainAlpha > 0.05 && p < 0.65 && !reduced) {
+      c.save();
+      c.globalAlpha = curWx.rainAlpha * 0.4;
+      for (let i = 0; i < 8; i++) {
+        const rx = ((t * 40 + i * 137) % W);
+        const ry = hy + 20 + ((t * 60 + i * 89) % (H - hy - 40));
+        const rr = 4 + (i % 3) * 3;
+        c.strokeStyle = 'rgba(200,230,255,0.5)';
+        c.lineWidth = 1;
+        c.beginPath(); c.ellipse(rx, ry, rr, rr * 0.3, 0, 0, 6.28); c.stroke();
+      }
+      c.restore();
+    }
+
+    // clear-weather birds / sparkles
+    if (curWx.birds && p < 0.45) {
+      c.save();
+      for (let i = 0; i < 5; i++) {
+        const x = (W * 0.1 + i * W * 0.22 + (reduced ? i * 40 : t * 30 * (1 + i * 0.2))) % W;
+        const y = H * 0.25 + Math.sin((reduced ? i : t) + i) * 20 + i * 15;
+        c.strokeStyle = curPal.bird;
+        c.lineWidth = 2;
+        c.beginPath();
+        const f = reduced ? 0 : Math.sin(t * 8 + i) * 6;
+        c.moveTo(x - 10, y - f);
+        c.quadraticCurveTo(x - 5, y - 4, x, y);
+        c.quadraticCurveTo(x + 5, y - 4, x + 10, y - f);
+        c.stroke();
+      }
+      c.restore();
+    }
+
+    c.restore();
+  }
+
+  function drawTemple(cx, top, pw, h, t) {
+    const s = pw;
+    const stone = curPal.stone;
+    c.save();
+    if (h > 0) {
+      c.shadowColor = curPal.moon
+        ? 'rgba(47,255,192,' + h + ')'
+        : 'rgba(255,210,120,' + h + ')';
+      c.shadowBlur = 40 * h;
+    }
+    const st = (x, y, w, hh, c1, c2) => {
+      const g = c.createLinearGradient(x, 0, x + w, 0);
+      g.addColorStop(0, c2); g.addColorStop(0.35, c1); g.addColorStop(1, c2);
+      c.fillStyle = g; c.fillRect(x, y, w, hh);
+    };
+    for (let i = 0; i < 3; i++) {
+      const w = s * (1 - i * 0.12), y = top - s * 0.1 * (i + 1);
+      st(cx - w / 2, y, w, s * 0.1, stone[0], stone[1]);
+      c.fillStyle = 'rgba(0,0,0,0.15)';
+      c.fillRect(cx - w / 2, y + s * 0.09, w, s * 0.01);
+    }
+    const sw = s * 0.22;
+    for (let i = 0; i < 8; i++) {
+      c.fillStyle = i % 2 ? stone[1] : stone[0];
+      c.fillRect(cx - sw / 2, top - s * 0.3 * (i / 8) - s * 0.3 / 8, sw, s * 0.3 / 8);
+    }
+    const ty = top - s * 0.3, tw = s * 0.62;
+    st(cx - tw / 2, ty - s * 0.24, tw, s * 0.24, stone[0], stone[1]);
+    // doorways
+    c.fillStyle = curPal.doorDark;
+    [-0.3, 0, 0.3].forEach(o => { c.fillRect(cx + o * tw - s * 0.045, ty - s * 0.17, s * 0.09, s * 0.17); });
+    // glow — stronger in jade night
+    const glowA = curPal.moon
+      ? (0.55 + 0.25 * Math.sin(t * 2) + 0.2 * h)
+      : (0.4 + 0.3 * Math.sin(t * 2) * h + 0.3 * h);
+    c.fillStyle = curPal.doorGlow[0];
+    c.globalAlpha = Math.max(0.15, glowA);
+    [-0.3, 0, 0.3].forEach(o => { c.fillRect(cx + o * tw - s * 0.035, ty - s * 0.15, s * 0.07, s * 0.15); });
+    if (curPal.moon) {
+      c.globalAlpha = 0.35 + 0.15 * Math.sin(t * 1.5);
+      c.fillStyle = curPal.doorGlow[1];
+      [-0.3, 0, 0.3].forEach(o => { c.fillRect(cx + o * tw - s * 0.025, ty - s * 0.13, s * 0.05, s * 0.13); });
+    }
+    c.globalAlpha = 1;
+    st(cx - tw * 0.56, ty - s * 0.3, tw * 1.12, s * 0.06, stone[0], stone[2]);
+    st(cx - tw * 0.5, ty - s * 0.34, tw, s * 0.04, stone[0], stone[1]);
+    c.restore();
+  }
+
+  function drawPalm(x, y, s, sw, i, t) {
+    c.save();
+    c.translate(x, y);
+    c.rotate(sw * 0.3);
+    c.strokeStyle = curPal.palmTrunk;
+    c.lineWidth = 10 * s;
+    c.lineCap = 'round';
+    c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(-20 * s, -110 * s, 12 * s, -220 * s); c.stroke();
+    c.strokeStyle = 'rgba(0,0,0,0.25)';
+    c.lineWidth = 2 * s;
+    for (let k = 1; k < 10; k++) {
+      c.beginPath(); c.moveTo(-6 * s + k * 0.5 * s, -k * 22 * s); c.lineTo(6 * s + k * s, -k * 22 * s); c.stroke();
+    }
+    c.translate(12 * s, -220 * s);
+    for (let j = 0; j < 9; j++) {
+      const a = -Math.PI + j * Math.PI / 8 + (reduced ? 0 : Math.sin(t * 1.4 + j + i) * 0.06) + sw;
+      c.save(); c.rotate(a);
+      const g = c.createLinearGradient(0, 0, 130 * s, 0);
+      g.addColorStop(0, curPal.palmLeaf[0]);
+      g.addColorStop(1, curPal.palmLeaf[1]);
+      c.fillStyle = g;
+      c.beginPath();
+      c.moveTo(0, 0);
+      c.quadraticCurveTo(65 * s, -28 * s, 135 * s, 22 * s);
+      c.quadraticCurveTo(65 * s, 0, 0, 6 * s);
+      c.fill();
+      c.restore();
+    }
+    c.fillStyle = curPal.palmTrunk;
+    for (let k = 0; k < 3; k++) {
+      c.beginPath(); c.arc(-6 * s + k * 7 * s, 6 * s, 6 * s, 0, 6.28); c.fill();
+    }
+    c.restore();
+  }
+
+  function drawWaves(hy, t) {
+    const amp = curWx.waveAmp;
+    for (let i = 0; i < 6; i++) {
+      const y0 = hy + (H - hy) * (0.15 + i * 0.16);
+      c.strokeStyle = 'rgba(255,255,255,' + (0.15 + i * 0.08) + ')';
+      c.lineWidth = 1 + i * 0.6;
+      c.beginPath();
+      for (let x = 0; x <= W; x += 12) {
+        const y = y0 + Math.sin(x * 0.012 + t * (1 + i * 0.3) + i) * (3 + i * 2) * amp + (mx - 0.5) * i * 4 * Math.cos(x * 0.004);
+        x ? c.lineTo(x, y) : c.moveTo(x, y);
+      }
+      c.stroke();
+    }
+    // beach
+    c.fillStyle = curPal.sand;
+    c.beginPath();
+    c.moveTo(0, H); c.lineTo(0, H * 0.9);
+    c.quadraticCurveTo(W * 0.25, H * 0.86, W * 0.45, H * 0.95);
+    c.lineTo(W * 0.5, H); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,0.85)';
+    c.lineWidth = 3;
+    c.beginPath();
+    for (let x = 0; x <= W * 0.48; x += 8) {
+      const y = H * 0.9 + (x / W) * 0.1 * H * 0.6 - Math.sin(x * 0.03 + t * 2) * 4 * amp + Math.sin(t) * 6;
+      x ? c.lineTo(x, y) : c.moveTo(x, y);
+    }
+    c.stroke();
+  }
+
+  // ---------- Layer 5: Weather overlay (rain / lightning), masked behind cards ----------
+  function layerWeather(p, now) {
+    // above storm: no rain in galaxy
+    const rainFade = 1 - sm(0.55, 0.75, p);
+    if (curWx.rainAlpha > 0.02 && rainFade > 0.02) {
+      c.save();
+      // mask out card rects so text stays crisp
+      const cards = document.querySelectorAll('.card');
+      // draw rain first, then punch holes — use destination-out over cards
+      c.globalAlpha = curWx.rainAlpha * rainFade;
+      const dens = curWx.rainDensity;
+      const n = Math.min(rainDrops.length, Math.round(140 * dens));
+      c.strokeStyle = curPal.night ? 'rgba(180,230,240,0.55)' : 'rgba(220,235,255,0.55)';
+      c.lineWidth = 1.2;
+      for (let i = 0; i < n; i++) {
+        const d = rainDrops[i];
+        if (!reduced) {
+          d.y += d.sp * d.z * (1.2 + curWind);
+          d.x += 0.0015 * curWind;
+          if (d.y > 1.1) { d.y = -0.05; d.x = rnd(); }
+          if (d.x > 1.1) d.x = -0.05;
+        }
+        const x = d.x * W;
+        const y = d.y * H;
+        const len = d.len * d.z;
+        c.beginPath();
+        c.moveTo(x, y);
+        c.lineTo(x + 4 + curWind * 6, y + len);
+        c.stroke();
+      }
+      // punch card areas
+      c.globalCompositeOperation = 'destination-out';
+      c.globalAlpha = 1;
+      cards.forEach(el => {
+        const r = el.getBoundingClientRect();
+        if (r.bottom < 0 || r.top > H) return;
+        const pad = 10;
+        c.beginPath();
+        roundRect(r.left - pad, r.top - pad, r.width + pad * 2, r.height + pad * 2, 18);
+        c.fill();
+      });
+      c.restore();
+    }
+
+    // distant lightning (storm only, never in reduced motion)
+    if (curWx.lightning && !reduced && p < 0.7) {
+      if (now > nextLightning) {
+        lightningFlash = 1;
+        nextLightning = now + 8000 + rnd(4000);
+      }
+      if (lightningFlash > 0) {
+        const hy = (geo.hy || H * 0.6) + dist();
+        c.save();
+        c.globalAlpha = lightningFlash * 0.22 * (1 - sm(0.5, 0.75, p));
+        const lg = c.createRadialGradient(W * 0.7, hy - 40, 0, W * 0.7, hy - 40, W * 0.5);
+        lg.addColorStop(0, 'rgba(200,220,255,0.9)');
+        lg.addColorStop(1, 'rgba(200,220,255,0)');
+        c.fillStyle = lg;
+        c.fillRect(0, 0, W, H);
+        c.restore();
+        lightningFlash *= 0.88;
+        if (lightningFlash < 0.02) lightningFlash = 0;
+      }
+    }
+  }
+
+  function roundRect(x, y, w, h, r) {
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+  }
+
+  // ---------- paint / loop ----------
+  function paint() {
+    const now = performance.now();
+    tickBlend(now);
+    const p = prog(), d = dist();
+
+    // temple hover
+    const tp = geo.temple;
+    if (tp) {
+      const X = mx * W, Y = my * H - d;
+      hoverT += ((X > tp[0] && X < tp[0] + tp[2] && Y > tp[1] && Y < tp[1] + tp[3]) ? 1 : 0 - hoverT) * 0.1;
+      hoverT = Math.max(0, Math.min(1, hoverT));
+    }
+
+    // Layer order
+    layerSky(p, now);           // 1
+    layerSunMoon(p, d, now);    // 2
+    layerClouds(d, p, now);     // 3
+    layerScene(d, p, now);      // 4
+    layerWeather(p, now);       // 5
+
+    document.documentElement.style.setProperty('--p', p.toFixed(3));
+    // nav contrast: brighten to white as we scroll up into dark sky
+    const navMix = sm(0.15, 0.55, p);
+    if (!curPal.night) {
+      // blend nav text toward white when sky darkens
+      const base = T.parseRgba(curPal.navText);
+      const white = [255, 255, 255, 1];
+      const r = Math.round(base[0] + (white[0] - base[0]) * navMix);
+      const g = Math.round(base[1] + (white[1] - base[1]) * navMix);
+      const b = Math.round(base[2] + (white[2] - base[2]) * navMix);
+      document.documentElement.style.setProperty('--nav-text-live', 'rgb(' + r + ',' + g + ',' + b + ')');
+      document.documentElement.style.setProperty('--nav-halo-live',
+        navMix > 0.4 ? '0 1px 8px rgba(0,0,0,0.45)' : curPal.navHalo);
+    } else {
+      document.documentElement.style.setProperty('--nav-text-live', curPal.navText);
+      document.documentElement.style.setProperty('--nav-halo-live', curPal.navHalo);
+    }
+
+    if (!reduced) {
+      document.querySelectorAll('.rv').forEach(el => {
+        const r = el.getBoundingClientRect();
+        el.classList.toggle('in', r.top < H * 0.9 && r.bottom > H * 0.1);
+      });
+    } else {
+      document.querySelectorAll('.rv').forEach(el => el.classList.add('in'));
+    }
+    needsPaint = false;
+  }
+
+  function loop() {
+    paint();
+    if (!reduced) rafId = requestAnimationFrame(loop);
+  }
+
+  function requestPaint() {
+    needsPaint = true;
+    if (reduced) {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => paint());
+    }
+  }
+
+  function setReduced(on) {
+    reduced = on;
+    document.documentElement.classList.toggle('reduced-motion', on);
+    if (on) {
+      cancelAnimationFrame(rafId);
+      // freeze: one static paint
+      blendT = 1;
+      paint();
+    } else {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(loop);
+    }
+  }
+
+  // events
+  addEventListener('resize', () => { initScene(); requestPaint(); });
+  addEventListener('mousemove', e => { mx = e.clientX / W; my = e.clientY / H; if (reduced) requestPaint(); });
+  addEventListener('touchmove', e => { mx = e.touches[0].clientX / W; my = e.touches[0].clientY / H; if (reduced) requestPaint(); }, { passive: true });
+  addEventListener('scroll', () => { if (reduced) requestPaint(); }, { passive: true });
+  addEventListener('click', e => {
+    if (e.target.closest('a,.card,#az-theme-wrap')) return;
+    const p = prog();
+    if (p > 0.45) {
+      for (let i = 0; i < 3; i++) shoot.push({ x: e.clientX, y: e.clientY, vx: rnd(-9, -4), vy: rnd(2, 5), l: 60 });
+    } else {
+      ripples.push({ x: e.clientX, y: e.clientY, r: 0 });
+    }
+    if (reduced) requestPaint();
+  });
+
+  // reduced motion media
+  const mql = matchMedia('(prefers-reduced-motion: reduce)');
+  setReduced(mql.matches);
+  if (mql.addEventListener) mql.addEventListener('change', e => setReduced(e.matches));
+  else if (mql.addListener) mql.addListener(e => setReduced(e.matches));
+
+  // wire weather
+  function applySnap(s) {
+    startBlend(s.time, s.weather, s.windFactor);
+    if (reduced) requestPaint();
+  }
+
+  // initial palette from synchronous clock (weather module already set state)
+  const snap0 = WX.getSnapshot();
+  curPal = T.clonePal(T.PALETTES[snap0.time] || T.PALETTES.sunset);
+  toPal = curPal; fromPal = curPal;
+  curWx = Object.assign({}, T.WEATHER_MOD[snap0.weather] || T.WEATHER_MOD.clear);
+  toWx = curWx; fromWx = curWx;
+  curWind = snap0.windFactor; toWind = curWind; fromWind = curWind;
+  T.applyCss(curPal, curWx);
+
+  WX.onChange(applySnap);
+  WX.init();
+
+  initScene();
+  scrollTo(0, 1e6);
+  addEventListener('load', () => scrollTo(0, 1e6));
+  if (!reduced) rafId = requestAnimationFrame(loop);
+  else paint();
+
+  root.AztecaEngine = { requestPaint, paint, setReduced };
+})(typeof window !== 'undefined' ? window : global);
+
+</script>
+</body>
+</html>
