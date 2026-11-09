@@ -64,7 +64,7 @@
       '<button type="button" class="az-opt" data-mode="auto">⏱ Automático (hora local de tu dispositivo)</button>' +
       '<div class="az-row">Hora</div><div class="az-grid" id="az-times"></div>' +
       '<div class="az-row">Clima <span class="sim-badge">simulado</span></div><div class="az-grid" id="az-weathers"></div>' +
-      '<div class="az-meta">Demo: el clima es una simulación visual elegida a mano. No se consulta ningún servicio ni tu ubicación. Revisión scroll-video.</div>' +
+      '<div class="az-meta">Demo: el clima es una simulación visual elegida a mano. No se consulta ningún servicio ni tu ubicación. Sitio principal: scroll-video.</div>' +
       '</div>';
     document.body.appendChild(wrap);
     const times = wrap.querySelector('#az-times'), weathers = wrap.querySelector('#az-weathers');
