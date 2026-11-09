@@ -6,6 +6,8 @@
 *.mp3
 *.m4a
 *.aac
+# Excepción: encode seek-friendly de la revisión scroll-video (no el original)
+!revision-video/assets/video/scroll.mp4
 # Secretos / entorno
 .env
 .env.*

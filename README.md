@@ -31,3 +31,7 @@ Parámetros de demo: `?time=morning|afternoon|sunset|night&weather=clear|cloudy|
 - **QA visual PENDIENTE:** el navegador de QA no pudo conectar con el servidor de vista previa (`ERR_CONNECTION_REFUSED` en 127.0.0.1:8090 y localhost). No se ha probado ningún ancho ni estado en un navegador, y no hay capturas del sitio.
   Pendiente: responsive escritorio/móvil, contraste real sobre cada escena y hora, fluidez y rendimiento del scroll, reduced-motion y foco con teclado.
 - Recordatorio: el fondo es de 704×432 (sin upscale) y el clima es una demo simulada.
+
+## Revisión scroll-video (no live)
+
+`revision-video/`: misma página con el video original controlado por scroll (pirámide→galaxias). No sustituye el live de 3 fotogramas. Detalle en `revision-video/MANIFEST.md`. Pruebas: `node tests/check-revision.mjs`.
