@@ -1,18 +1,19 @@
-/* AztecaWeb revisión scroll-video — progreso de subida → currentTime.
-   Sin autoplay/loop: el video permanece en pausa; solo se busca por scroll.
-   Reduced-motion / fallo: still de fallback, sin descargar ni mover el video. */
+/* AztecaWeb scroll-video — progreso de subida → currentTime.
+   Día: scroll.mp4 | Noche: scroll-night.mp4 (v3). Un solo video activo.
+   Sin autoplay/loop: pausa + seek. Reduced-motion: still, sin descargar video. */
 (function (root) {
   'use strict';
   const T = root.AztecaThemes;
-  const VIDEO_SRC = 'assets/video/scroll.mp4';
-  const MIN_SEEK = 1 / 48; // ~medio fotograma a 24 fps
+  const VIDEO_SRC_DAY = 'assets/video/scroll.mp4';
+  const VIDEO_SRC_NIGHT = 'assets/video/scroll-night.mp4';
+  const FALLBACK_DAY = 'assets/bg/fallback.webp';
+  const FALLBACK_NIGHT = 'assets/bg/fallback-night.webp';
+  const MIN_SEEK = 1 / 48;
 
   function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
-  /** Progreso de subida: 0 abajo (pirámide) → 1 arriba (galaxias). */
   function progress(scrollY, maxScroll) {
     return maxScroll > 0 ? clamp(1 - scrollY / maxScroll, 0, 1) : 0;
   }
-  /** Tiempo de video [0, duration] desde progreso. */
   function timeFromProgress(p, duration) {
     if (!(duration > 0)) return 0;
     return clamp(p, 0, 1) * duration;
@@ -21,8 +22,20 @@
     const d = minDelta == null ? MIN_SEEK : minDelta;
     return Math.abs(target - current) >= d;
   }
+  /** Fuente de video según franja; solo 'night' usa v3. */
+  function videoSrcForTime(time) {
+    return time === 'night' ? VIDEO_SRC_NIGHT : VIDEO_SRC_DAY;
+  }
+  function fallbackSrcForTime(time) {
+    return time === 'night' ? FALLBACK_NIGHT : FALLBACK_DAY;
+  }
 
-  const api = { clamp, progress, timeFromProgress, shouldSeek, MIN_SEEK, VIDEO_SRC };
+  const api = {
+    clamp, progress, timeFromProgress, shouldSeek, MIN_SEEK,
+    VIDEO_SRC_DAY, VIDEO_SRC_NIGHT, FALLBACK_DAY, FALLBACK_NIGHT,
+    videoSrcForTime, fallbackSrcForTime,
+    VIDEO_SRC: VIDEO_SRC_DAY
+  };
   root.AztecaRevision = api;
   if (typeof document === 'undefined') return;
 
@@ -37,6 +50,7 @@
   const html = document.documentElement;
   const stage = document.getElementById('stage');
   const video = document.getElementById('scroll-video');
+  const fallbackImg = stage ? stage.querySelector('img.fallback') : null;
   const rvs = Array.from(document.querySelectorAll('.rv'));
   const mql = matchMedia('(prefers-reduced-motion: reduce)');
   let reduced = mql.matches;
@@ -44,12 +58,23 @@
   let videoReady = false;
   let pendingTime = 0;
   let duration = 0;
+  let attachedSrc = null;
+  let loadGen = 0;
+
+  function applyFallbackStill() {
+    if (!fallbackImg) return;
+    const src = fallbackSrcForTime(state.time);
+    if (fallbackImg.getAttribute('src') !== src) fallbackImg.setAttribute('src', src);
+  }
 
   function applyTheme() {
     const pal = T.PALETTES[state.time] || T.PALETTES.sunset;
     T.applyCss(pal, T.WEATHER_MOD[state.weather] || {});
     html.dataset.weather = state.weather;
+    html.dataset.time = state.time;
     syncPill();
+    applyFallbackStill();
+    if (!reduced) ensureVideoForTime();
     schedule();
   }
 
@@ -64,7 +89,7 @@
       '<button type="button" class="az-opt" data-mode="auto">⏱ Automático (hora local de tu dispositivo)</button>' +
       '<div class="az-row">Hora</div><div class="az-grid" id="az-times"></div>' +
       '<div class="az-row">Clima <span class="sim-badge">simulado</span></div><div class="az-grid" id="az-weathers"></div>' +
-      '<div class="az-meta">Demo: el clima es una simulación visual elegida a mano. No se consulta ningún servicio ni tu ubicación. Sitio principal: scroll-video.</div>' +
+      '<div class="az-meta">Demo: el clima es una simulación visual elegida a mano. No se consulta ningún servicio ni tu ubicación. Noche usa video v3; resto el de día. Preview: ?time=night</div>' +
       '</div>';
     document.body.appendChild(wrap);
     const times = wrap.querySelector('#az-times'), weathers = wrap.querySelector('#az-weathers');
@@ -118,7 +143,7 @@
     try {
       video.pause();
       video.currentTime = t;
-    } catch (e) { /* seek puede fallar mid-load */ }
+    } catch (e) {}
   }
 
   function onSeeked() {
@@ -149,6 +174,7 @@
 
   function detachVideo() {
     videoReady = false;
+    attachedSrc = null;
     if (!video) return;
     try {
       video.removeAttribute('src');
@@ -158,34 +184,56 @@
     stage && stage.classList.remove('video-ready');
   }
 
-  function attachVideo() {
+  function ensureVideoForTime() {
     if (!video || reduced) return;
-    if (video.getAttribute('src') === VIDEO_SRC && videoReady) { schedule(); return; }
+    const want = videoSrcForTime(state.time);
+    if (attachedSrc === want && videoReady) { schedule(); return; }
+    attachVideo(want);
+  }
+
+  function attachVideo(src) {
+    if (!video || reduced) return;
+    const gen = ++loadGen;
+    videoReady = false;
+    attachedSrc = null;
+    stage && stage.classList.remove('video-ready');
     video.muted = true;
     video.defaultMuted = true;
     video.playsInline = true;
     video.loop = false;
     video.autoplay = false;
     video.preload = 'auto';
-    video.setAttribute('src', VIDEO_SRC);
+    video.setAttribute('src', src);
     const onReady = () => {
+      if (gen !== loadGen) return;
+      if (videoSrcForTime(state.time) !== src) return;
       duration = video.duration || 0;
       if (!(duration > 0) || !isFinite(duration)) return;
       videoReady = true;
+      attachedSrc = src;
       stage.classList.add('video-ready');
       stage.classList.remove('video-failed');
       try { video.pause(); } catch (e) {}
       schedule();
     };
     const onFail = () => {
+      if (gen !== loadGen) return;
       videoReady = false;
+      attachedSrc = null;
       stage.classList.remove('video-ready');
       stage.classList.add('video-failed');
-      detachVideo();
+      try {
+        video.removeAttribute('src');
+        video.load();
+      } catch (e) {}
     };
     video.addEventListener('loadedmetadata', onReady, { once: true });
     video.addEventListener('error', onFail, { once: true });
-    video.addEventListener('seeked', onSeeked);
+    // seeked listener once globally — avoid stacking
+    if (!video._azSeekBound) {
+      video.addEventListener('seeked', onSeeked);
+      video._azSeekBound = true;
+    }
     try { video.load(); } catch (e) { onFail(); }
   }
 
@@ -193,7 +241,7 @@
     reduced = on;
     html.classList.toggle('reduced-motion', on);
     if (on) detachVideo();
-    else attachVideo();
+    else ensureVideoForTime();
     schedule();
   }
 

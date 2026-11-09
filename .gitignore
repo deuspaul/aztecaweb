@@ -9,6 +9,7 @@
 # Excepción: encodes seek-friendly publicados (no el original)
 !revision-video/assets/video/scroll.mp4
 !assets/video/scroll.mp4
+!assets/video/scroll-night.mp4
 # Secretos / entorno
 .env
 .env.*

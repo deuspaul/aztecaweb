@@ -1,0 +1,25 @@
+{
+  "source": {
+    "file": "aztecaweb-night-v3.mp4",
+    "sha256": "24b22197454da6fbdca32d08bb1d46817cf59ea3edef5d22b8864767ab6a0a36",
+    "note": "source outside repo; not modified"
+  },
+  "published": {
+    "file": "assets/video/scroll-night.mp4",
+    "sha256": "08a53c9be34b4a87c07143d7083242d4f78f0682fd6f61196e5d193cd907e4be",
+    "duration_s": 12.5,
+    "frames": 300,
+    "gop": 12,
+    "audio": false,
+    "wh": [
+      704,
+      432
+    ]
+  },
+  "fallback": {
+    "file": "assets/bg/fallback-night.webp",
+    "from_t_s": 1.5,
+    "note": "representative clean frame at pyramid start",
+    "sha256": "3867ed21035e0af00047af949eb15eb35469019b2bdb8790a696aed0bbbfcd84"
+  }
+}

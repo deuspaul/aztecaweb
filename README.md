@@ -35,3 +35,7 @@ No sustituyen QA en navegador.
 
 - Live público: GitHub Pages (`gh-pages`). Fondo 704×432; seek por scroll con límites de decodificador; clima demo.
 - QA visual navegador: coordinar aparte.
+
+## Night video v3
+
+At night the scroll background switches to night v3 (`assets/video/scroll-night.mp4`). Preview: `?time=night`. Details: `docs/NIGHT-VIDEO-V3.md`.
